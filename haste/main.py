@@ -1,9 +1,10 @@
 import pyautogui
 import time
 
+file_name = input('File name:')
+file_handle = open(file_name)
+
 time.sleep(5)
 
-f = open("lol.txt", 'r')
-
-for word in f:
+for word in file_handle:
     pyautogui.typewrite(word, 0.0)
