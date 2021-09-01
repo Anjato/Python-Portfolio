@@ -7,6 +7,7 @@ clear = lambda: os.system('cls')
 file_name = input('File name:')
 file_handle = open(file_name)
 
+clear()
 print("Starting in 5 seconds...")
 sleep(1)
 clear()
@@ -27,3 +28,7 @@ print("Starting! :)")
 
 for word in file_handle:
     pyautogui.typewrite(word, 0.0)
+
+clear()
+print("All done. Bye bye!")
+sleep(2)
