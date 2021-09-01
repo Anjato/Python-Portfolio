@@ -3,7 +3,9 @@ import glob
 import pandas as pd
 import os
 
-clear = lambda: os.system('cls')
+
+def clear(): return os.system('cls')
+
 
 # check to see if output directory present, if not then create
 
