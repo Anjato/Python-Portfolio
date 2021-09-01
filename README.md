@@ -5,4 +5,4 @@ Contains all of my Python programs that I have created
 Concats .xlsx files
 
 # bigBrain
-Script that will auto solve math equations on rankyourbrain.com
+Script that will auto solve math equations on www.thatquiz.org
