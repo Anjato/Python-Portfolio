@@ -11,6 +11,7 @@ while True:
     # originally had as a global but it would throw a stale element reference error, idk why
     table_equation = browser.find_element_by_xpath("//table[@class='g6cd']/tbody/tr/td[2]/table/tbody/tr/td[1]")
 
+    # replaces unicode letters with operators that python understands
     t = table_equation.text.replace(u"\u00D7", "*").replace(u"\u00F7", "/").replace(u"\u2013", "-")
 
     print(t)
