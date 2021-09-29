@@ -12,3 +12,6 @@ Automatically types words on https://www.keybr.com/
 
 # oop
 Testing Object Oriented Programming in Python
+
+#typeracer
+Automatically completes races on https://www.typeracer.com/
