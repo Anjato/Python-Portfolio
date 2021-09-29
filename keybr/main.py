@@ -51,7 +51,7 @@ go = driver.find_element_by_xpath('//*[@id="App"]/div/div[1]/div[1]')
 # variable to compare it to
 compare = "GO!"
 
-# if the statement is not true, loops this until it is
+# if the statement is not true, loops this until it is true
 while go.text != compare:
     time.sleep(0.1)
 
