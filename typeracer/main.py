@@ -1,23 +1,22 @@
-import time
 import pyautogui
 import cv2
 import pytesseract
 from pathlib import Path
 import os
+from time import sleep
 from cryptography.fernet import Fernet
 from selenium import webdriver
 from selenium.webdriver.firefox.service import Service as FirefoxService
 from webdriver_manager.firefox import GeckoDriverManager
 from selenium.webdriver.common.by import By
+from selenium.common.exceptions import NoSuchElementException
+from selenium.webdriver.support import expected_conditions as ec
+from selenium.webdriver.support.ui import WebDriverWait
 
 pytesseract.pytesseract.tesseract_cmd = r'C:\\Program Files\\Tesseract-OCR\\tesseract.exe'
 
 driver = webdriver.Firefox(service=FirefoxService(GeckoDriverManager().install()))
 driver.get('https://play.typeracer.com/')
-
-# give page time to load the sign in javascript in top right
-time.sleep(2)
-
 
 # function to login the user with credentials found in creds.txt (same folder as main.py), going to add encryption
 # support to not store password in plaintext
@@ -45,81 +44,72 @@ def login():
 
 ############# ADD FOCUS WINDOW HERE #######################
 
-    # sign in button in top right
-    loginbtn = driver.find_element(By.XPATH, "//a[@class='promptBtn signIn']")
-    loginbtn.click()
-    # give time for form to pop up
-    time.sleep(1)
-    # replaces new line to prevent hitting enter after entering username
-    pyautogui.write(user.replace("\n", ""), interval=0.01)
-    # hits tab to goto password field
-    pyautogui.press('tab')
-    pyautogui.write(passwd, interval=0.01)
-    pyautogui.press('enter')
+    loginbtn = WebDriverWait(driver, 10).until(ec.presence_of_element_located((By.XPATH, "//a[@class='promptBtn "
+                                                                                         "signIn']")))
+    # loginbtn = driver.find_element(By.XPATH, "//a[@class='promptBtn signIn']")
 
-    # give time for sign in form to disappear
-    time.sleep(1)
+    loginbtn.click()
+
+    usernameTextBox = WebDriverWait(driver, 10).until(ec.presence_of_element_located((By.XPATH, "//input["
+                                                                                                "@name='username']")))
+    passwordTextBox = WebDriverWait(driver, 10).until(ec.presence_of_element_located((By.XPATH, "//input["
+                                                                                                "@name='password']")))
+    usernameTextBox.send_keys(user)
+    passwordTextBox.send_keys(passwd)
+
+    signInButton = driver.find_element(By.XPATH, "//button[@class='gwt-Button']")
+    signInButton.click()
 
     response()
 
 
 # main function that complete races. must be on the main page for the function to find the begin race button
 def main():
-    race = driver.find_element(By.XPATH, "//a[@class='gwt-Anchor prompt-button bkgnd-green']")
+    race = WebDriverWait(driver, 20).until(ec.presence_of_element_located((By.XPATH, "//a[@class='gwt-Anchor prompt-button bkgnd-green']")))
     race.click()
 
-    # gives time for xpath to load and be found while running the loop statement(s)
-    time.sleep(4)
-
-    go = driver.find_element(By.XPATH, "//div[@class='gameStatusLabel']")
+    go = WebDriverWait(driver, 20).until(ec.presence_of_element_located((By.XPATH, "//div[@class='gameStatusLabel']")))
     compare = "Go!"
 
-    changeDisplayFormat = driver.find_element(By.XPATH, "//a[@class='gwt-Anchor display-format-trigger']")
+    changeDisplayFormat = WebDriverWait(driver, 20).until(ec.presence_of_element_located((By.XPATH, "//a[@class='gwt-Anchor display-format-trigger']")))
 
     changeDisplayFormat.click()
-    time.sleep(0.5)
-    oldStyleOneRadio = driver.find_element(By.XPATH, "//span[@class='gwt-RadioButton OLD_FULLTEXT']/input")
+    oldStyleOneRadio = WebDriverWait(driver, 20).until(ec.presence_of_element_located((By.XPATH, "//span[@class='gwt-RadioButton OLD_FULLTEXT']/input")))
     oldStyleOneRadio.click()
-    time.sleep(0.5)
-    changeDisplayFormatX = driver.find_element(By.XPATH, "//div[@class='xButton']")
+    changeDisplayFormatX = WebDriverWait(driver, 20).until(ec.presence_of_element_located((By.XPATH, "//div[@class='xButton']")))
     changeDisplayFormatX.click()
-    time.sleep(1)
 
-    words = driver.find_element(By.XPATH, "//div[@class='nonHideableWords unselectable']/span[2]")
-    comma = driver.find_element(By.XPATH, "//div[@class='nonHideableWords unselectable']/span[3]")
+    words = WebDriverWait(driver, 20).until(ec.presence_of_element_located((By.XPATH, "//div[@class='nonHideableWords unselectable']/span[2]")))
 
     print(go.text)
     while go.text != compare:
-        time.sleep(0.1)
+        sleep(0.1)
 
     while go.text == compare:
-        comma = driver.find_element(By.XPATH, "//div[@class='nonHideableWords unselectable']/span[3]")
-        if comma.text == ',':
-            print(words.text + comma.text)
-            pyautogui.write(words.text + ',' + ' ', interval=0.05)
-        else:
-            print(words.text + comma.text)
-            pyautogui.write(words.text + ' ', interval=0.05)
-
-    # if go.text == compare:
-    #     pyautogui.write(firstWord.text + ' ', interval=0.05)
-    #     print(firstWord.text)
-    #     while go.text == compare:
-    #         pyautogui.write(otherWords.text, interval=0.05)
-    #         print(otherWords.text)
+        try:
+            textInput = driver.find_element(By.XPATH, "//input[@class='txtInput']")
+            punctuation = driver.find_element(By.XPATH, "//div[@class='nonHideableWords unselectable']/span[3]")
+            if punctuation.text != '':
+                print(words.text + punctuation.text)
+                # pyautogui.write(words.text + ',' + ' ', interval=0.01)
+                textInput.send_keys(words.text + punctuation.text + ' ')
+                sleep(0.16)
+            else:
+                print(words.text + punctuation.text)
+                # pyautogui.write(words.text + ' ', interval=0.01)
+                textInput.send_keys(words.text + ' ')
+                sleep(0.16)
+        except NoSuchElementException:
+            print('Unable to find text field for race. Race finished!')
+            response()
+            pass
 
     response()
 
 
 # function to complete the typing speed verification. not currently done due to tesseract not reading images well
 def test():
-    begintest = driver.find_element_by_xpath('/html/body/div[16]/div/div/div[2]/div/div/table/tbody/tr[4]/td/button' or
-                                             '/html/body/div[10]/div/div/div[2]/div/div/table/tbody/tr[4]/td/button')
-    begintest.click()
-
-    image = driver.find_element_by_xpath('/html/body/div[16]/div/div/div[2]/div/div/table/tbody/tr[3]/td/img')
-
-    pyautogui.write(captcha, interval=0.07)
+    print('Blank')
 
 
 # function to take user input to either start a race (must be on main page) or complete a test to verify typing speed
@@ -134,7 +124,7 @@ def response():
         # just in case :)
     elif choice != 1 or 2:
         print("Invalid argument, please try again.")
-        time.sleep(3)
+        sleep(3)
         response()
 
 
@@ -147,10 +137,8 @@ def tesseracttest():
     print(text)
 
 
-def getRes():
+def getres():
     width, height = pyautogui.size()
-    global modW
-    global modH
     modW = width / 1.2
     modH = height / 1.2
     driver.set_window_size(modW, modH)
@@ -158,4 +146,4 @@ def getRes():
     login()
 
 
-getRes()
+getres()
