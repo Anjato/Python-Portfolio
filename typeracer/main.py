@@ -1,6 +1,4 @@
-import logging
 import pyautogui
-import cv2
 import os
 from time import sleep
 from selenium import webdriver
@@ -12,7 +10,6 @@ from selenium.webdriver.support import expected_conditions as ec
 from selenium.webdriver.support.ui import WebDriverWait
 import subprocess as sp
 import requests
-import json
 
 driver = webdriver.Chrome(service=ChromeService(ChromeDriverManager().install()))
 driver.get('https://play.typeracer.com/')
@@ -40,8 +37,8 @@ def login():
     else:
         f = open(file, "r")
         read = f.readlines()
-        user = read[3]
-        passwd = read[4]
+        user = read[0]
+        passwd = read[1]
         f.close()
 
     loginbtn = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, '.promptBtn.signIn')))
@@ -55,8 +52,8 @@ def login():
                                                                               "> td > input")))
     signInButton = driver.find_element(By.CSS_SELECTOR, ".gwt-Button[type=button]")
 
-    passwordTextBox.send_keys(passwd)
     usernameTextBox.send_keys(user)
+    passwordTextBox.send_keys(passwd)
 
     signInButton.click()
 
