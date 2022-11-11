@@ -7,7 +7,8 @@ from webdriver_manager.chrome import ChromeDriverManager
 from selenium.webdriver.common.by import By
 from selenium.common.exceptions import NoSuchElementException
 from selenium.webdriver.support import expected_conditions as ec
-from selenium.webdriver.support.ui import WebDriverWait
+from selenium.webdriver.support.ui import WebDriverWait, Select
+from selenium.webdriver.common.alert import Alert
 import subprocess as sp
 import requests
 
@@ -17,23 +18,29 @@ driver.get('https://play.typeracer.com/')
 wait = WebDriverWait(driver, 10)
 
 
-# function to log in the user with credentials found in creds.txt (same folder as main.py), going to add encryption
-# support to not store password in plaintext
+# function to log in the user with credentials found in creds.txt (same folder as main.py)
+# may add encryption later but meh, maybe later
 def login():
+
+    # credentials file with username and password
     file = "creds.txt"
 
+    # if file is ABSENT, it will request the user to enter the credentials into the console
     if not os.path.exists(file):
-        user = str(input("Please enter username:"))
-        passwd = str(input("Please enter password:"))
+        user = str(input("Please enter username:\n"))
+        passwd = str(input("Please enter password:\n"))
         f = open(file, "w")
         f.writelines([user, "\n", passwd])
         f.close()
+    # if file is EMPTY,  it will request the user to enter the credentials into the console
     elif os.stat(file).st_size == 0:
-        user = str(input("Please enter username:"))
-        passwd = str(input("Please enter password:"))
+        user = str(input("Please enter username:\n"))
+        passwd = str(input("Please enter password:\n"))
         f = open(file, "w")
         f.writelines([user, "\n", passwd])
         f.close()
+    # opens file and reads username and password from specified lines. I may make this a bit more modular so a person
+    # can choose between multiple accounts within the same file
     else:
         f = open(file, "r")
         read = f.readlines()
@@ -41,22 +48,34 @@ def login():
         passwd = read[1]
         f.close()
 
+    # finds the login button
     loginbtn = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, '.promptBtn.signIn')))
-    # loginbtn = driver.find_element(By.XPATH, "//a[@class='promptBtn signIn']")
 
+    # clicks the login button
     loginbtn.click()
 
+    # finds the suername and password text boxes as well as the sign in button
     usernameTextBox = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".gwt-TextBox[name='username'")))
     passwordTextBox = wait.until(ec.element_to_be_clickable((By.CSS_SELECTOR, "tr:nth-child(2) > td:nth-child(2) "
                                                                               "> table > tbody > tr:nth-child(1) "
                                                                               "> td > input")))
     signInButton = driver.find_element(By.CSS_SELECTOR, ".gwt-Button[type=button]")
+    alert = Alert(driver)
 
+    # sends the username and password from the creds.txt file to the appropriate text boxes
     usernameTextBox.send_keys(user)
-    passwordTextBox.send_keys(passwd)
 
+    # check if random alert pops up and close it
+    if alert.text != '':
+        alert.accept()
+        passwordTextBox.send_keys(passwd)
+    else:
+        passwordTextBox.send_keys(passwd)
+
+    # clicks the signin button after entering the credentials
     signInButton.click()
 
+    # executs response function
     response()
 
 
@@ -101,7 +120,7 @@ def main():
                 textInput.send_keys(words.text + ' ')
                 sleep(0.15)
         except NoSuchElementException:
-            print('Unable to find text field for race. Race finished!')
+            print('Unable to find text field for race. Race finished!\n')
             response()
             pass
 
@@ -109,8 +128,9 @@ def main():
 
 
 # function to take user input to either start a race (must be on main page) or complete a test to verify typing speed
+# will add a check to go to home page if a race is started but the user is not on the home page to find the elements
 def response():
-    choice = int(input("Are you starting a race (1) or a test (2)?"))
+    choice = int(input("Are you starting a race (1) or a test (2)?\n"))
 
     if choice == 1:
         main()
@@ -123,8 +143,7 @@ def response():
         response()
 
 
-# function needs some more looking into, tesseract works but struggles to identify the letters due to them being warped
-# and having lines strikethrough. only here for testing tesseract and once complete, will be put into test function
+# uses ocr.space API to send image for OCR
 def test():
 
     api_file = 'api.key'
@@ -178,7 +197,7 @@ def vpn():
             print(connectionState)
             sleep(1)
         else:
-            print("VPN Connected! Continuing test...")
+            print("VPN Connected! Continuing...\n")
             break
 
     os.chdir(originaldir)
@@ -217,13 +236,65 @@ def ocr_space_file(filename, overlay=False, api_key='', language='eng', OCREngin
     return r.json()
 
 
+# Gets and changes the resolution
 def getres():
     width, height = pyautogui.size()
     modW = width / 1.2
     modH = height / 1.2
     driver.set_window_size(modW, modH)
 
-    login()
+# executes login function
+    accountchoice()
+
+
+def createaccount():
+    choice = int(input("Do you want to use PIA VPN to create your account?\n 1 = Yes\n 2 = No\n"))
+    vpnstatus = checkvpn()
+
+    if choice == 1:
+        if vpnstatus != "Connected":
+            vpn()
+        else:
+            pass
+    if choice == 2:
+        pass
+
+    create_account = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".promptBtn.createAcct")))
+    create_account.click()
+
+    firstName = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".AdvancedTextBox[maxlength='40']:first-child")))
+    lastName = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".AdvancedTextBox[maxlength='40']:last-child")))
+    email = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".AdvancedTextBox.AdvancedTextBox-unfocused[maxlength='317']")))
+    dobMonth = Select(wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".DirtyComboBox.DirtyComboBox-unfocused"))))
+    dobYear = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".AdvancedTextBox.AdvancedTextBox-unfocused[maxlength='4']")))
+    username = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".gwt-TextBox[size='15']")))
+    password = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(16) > td:nth-child(2) > input:nth-child(1)")))
+    repeatPassword = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(18) > td:nth-child(2) > input")))
+    signUpBtn = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, "tr:nth-child(20) > td:nth-child(2) > table > tbody > tr > td:nth-child(1) > button")))
+
+    firstName.send_keys('First Name')
+    lastName.send_keys('Last')
+    email.send_keys('email@email.com')
+    dobMonth.select_by_index(5)
+    dobYear.send_keys('2000')
+    username.send_keys('username')
+    password.send_keys('password')
+    repeatPassword.send_keys('password')
+    signUpBtn.click()
+
+
+def accountchoice():
+    choice = int(input("Would you like to create an account (1) or login (2)?\n"))
+
+    if choice == 1:
+        createaccount()
+    elif choice == 2:
+        login()
+        # just in case :)
+    elif choice != 1 or 2:
+        print("Invalid argument, please try again.")
+        sleep(3)
+        accountchoice()
 
 
 getres()
