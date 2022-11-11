@@ -127,6 +127,13 @@ def response():
 # and having lines strikethrough. only here for testing tesseract and once complete, will be put into test function
 def test():
 
+    api_file = 'api.key'
+
+    f = open(api_file, 'r')
+    api_read = f.readlines()
+    api_key = api_read[0]
+
+
     # vpn()
 
     begintest = wait.until(ec.presence_of_element_located((By.CSS_SELECTOR, ".gwt-Button.gwt-Button")))
@@ -141,7 +148,7 @@ def test():
 
     challenge = "challenge.png"
 
-    challengeOCRText = ocr_space_file(filename=challenge)
+    challengeOCRText = ocr_space_file(filename=challenge, api_key=api_key)
     challengeText = challengeOCRText['ParsedResults'][0]['ParsedText']
 
     challengeTextBox.send_keys(challengeText)
@@ -177,7 +184,7 @@ def vpn():
     os.chdir(originaldir)
 
 
-def ocr_space_file(filename, overlay=False, api_key='K8561183428895', language='eng', OCREngine=5, scale=True):
+def ocr_space_file(filename, overlay=False, api_key='', language='eng', OCREngine=5, scale=True):
     """ OCR.space API request with local file.
         Python3.5 - not tested on 2.7
     :param filename: Your file path & name.
